@@ -1,0 +1,13 @@
+version: 3.8.0
+services:
+  pact-broker:
+    image: pactfoundation/pact-cli:latest
+    volumes:
+      - ${PWD}:${PWD}
+    working_dir: ${PWD}
+    environment:
+      - PACT_BROKER_BASE_URL=<replace_with_pact_broker_url>
+      - PACT_BROKER_TOKEN=<replace_with_pact_broker_token>
+    command: 
+      pact-broker
+      pactflow
