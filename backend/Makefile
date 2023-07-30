@@ -5,14 +5,11 @@ endif
 
 VERSION?=$(shell npx -y absolute-version)
 BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
-PACT_BROKER_COMMAND=docker run --rm -v /${PWD}:/${PWD} -w ${PWD} -e PACT_BROKER_BASE_URL -e PACT_BROKER_TOKEN pactfoundation/pact-cli:latest pact-broker
-PACTFLOW_CLI_COMMAND=docker run --rm -v /${PWD}:/${PWD} -w ${PWD} -e PACT_BROKER_BASE_URL -e PACT_BROKER_TOKEN pactfoundation/pact-cli:latest pactflow
 
 OAS_PATH=oas/swagger.yml
 REPORT_PATH?=$(shell ls oas/*)
 REPORT_FILE_CONTENT_TYPE?=text/plain
 VERIFIER_TOOL?=tap
-
 
 install: yarn install
 
@@ -33,17 +30,9 @@ test_and_publish:
 publish_provider_contract:
 	@echo "========== STAGE: publish-provider-contract (spec + results) =========="
 	@echo "EXIT_CODE" ${EXIT_CODE}
-	${PACTFLOW_CLI_COMMAND} publish-provider-contract \
-      ${OAS_PATH} \
-      --provider ${PACTICIPANT} \
-      --provider-app-version ${VERSION} \
-      --branch ${BRANCH} \
-      --content-type application/yaml \
-      --verification-exit-code=${EXIT_CODE} \
-      --verification-results ${REPORT_PATH} \
-      --verification-results-content-type ${REPORT_FILE_CONTENT_TYPE}\
-      --verifier ${VERIFIER_TOOL}
-
+	VERSION=$(shell npx -y absolute-version) \
+	BRANCH=$(shell git rev-parse --abbrev-ref HEAD) \
+	docker-compose run publish_provider_contract
 
 ifneq ($(filter $(BRANCH),main master),)
 	DEPLOY_TARGET=deploy
@@ -58,22 +47,13 @@ no_deploy:
 
 can_i_deploy:
 	@echo "========== STAGE: can-i-deploy? 🌉 =========="
-	${PACT_BROKER_COMMAND} can-i-deploy \
-	--pacticipant ${PACTICIPANT} \
-	--version ${VERSION} \
-	--to-environment production \
-	--retry-while-unknown 6 \
-	--retry-interval 10
+	docker-compose run can_i_deploy
 
 deploy_app:
 	@echo "========== STAGE: deploy 🚀 =========="
 	@echo "Deploying to prod"
 
 record_deployment:
-	${PACT_BROKER_COMMAND} \
-	record_deployment \
-	--pacticipant ${PACTICIPANT} \
-	--version ${VERSION} \
-	--environment production
+	docker-compose run record_deployment
 
 .PHONY: start stop test

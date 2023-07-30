@@ -1,14 +1,13 @@
 {
-  "name": "frontend",
   "private": true,
-  "version": "1.0.0",
+  "name": "frontend",
   "scripts": {
     "dev": "next",
     "build": "next build",
     "start": "next start",
     "type-check": "tsc",
     "clear-pacts": "rm -rf ./pacts",
-    "test":"clear-pacts && jest"
+    "test":"yarn clear-pacts && jest"
   },
   "dependencies": {
     "axios": "^0.21.1",

@@ -13,7 +13,6 @@
     "watch:ts": "tsc -w",
     "dev": "yarn build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App\" -c \"yellow.bold,cyan.bold\" \"npm:watch:ts\" \"npm:dev:start\"",
     "dev:start": "fastify start --ignore-watch=.ts$ -w -l info -P dist/app.js",
-    "test:publish": "EXIT_CODE=0 make publish_provider_contract",
     "generate-oas": "ts-node utils/generateOas.ts"
   },
   "keywords": [],

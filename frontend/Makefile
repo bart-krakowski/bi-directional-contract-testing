@@ -3,44 +3,40 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
-PACT_CLI="docker run --rm -v ${PWD}:${PWD} -e PACT_BROKER_BASE_URL -e PACT_BROKER_TOKEN pactfoundation/pact-cli"
-VERSION?=$(shell npx -y absolute-version)
-GIT_COMMIT=$(shell git rev-parse --short HEAD)
-GIT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
-
 ifeq ($(GIT_BRANCH),master)
 	DEPLOY_TARGET=deploy
 else
 	DEPLOY_TARGET=no_deploy
 endif
 
-ci: test publish_pacts can_i_deploy $(DEPLOY_TARGET)
+ci:
+	GIT_COMMIT=`git rev-parse --short HEAD`+`date +%s` \
+	GIT_BRANCH=`git rev-parse --abbrev-ref HEAD` \
+	make test publish_pacts can_i_deploy $(DEPLOY_TARGET)
 
-publish_pacts: .env
+publish_pacts:
 	@echo "========== STAGE: publish pacts =========="
-	@"${PACT_CLI}" publish ${PWD}/pacts --consumer-app-version ${GIT_COMMIT} --branch ${GIT_BRANCH}
+	docker-compose run publish_pacts
 
-test: .env
-	@echo "========== STAGE: test (msw) 🧪 =========="
+test:
+	@echo "\n========== STAGE: test (msw) ==========\n"
 	npm run test
+
+create_environment:
+	@"${PACT_CLI}" broker create-environment --name production --production
 
 deploy: deploy_app record_deployment
 
 no_deploy:
 	@echo "Not deploying as not on master branch"
 
-can_i_deploy: .env
+can_i_deploy:
 	@echo "========== STAGE: can-i-deploy? =========="
-	@"${PACT_CLI}" broker can-i-deploy \
-	  --pacticipant ${PACTICIPANT} \
-	  --version ${GIT_COMMIT} \
-	  --to-environment production \
-	  --retry-while-unknown 6 \
-	  --retry-interval 10
+	docker-compose run can_i_deploy
 
 deploy_app:
-	@echo "========== STAGE: deploy =========="
+	@echo "\n========== STAGE: deploy ==========\n"
 	@echo "Deploying to production"
 
-record_deployment: .env
-	@"${PACT_CLI}" broker record-deployment --pacticipant ${PACTICIPANT} --version ${GIT_COMMIT} --environment production
+record_deployment:
+	docker-compose run record_deployment
